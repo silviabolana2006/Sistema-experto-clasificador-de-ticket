@@ -1,105 +1,78 @@
 
 
-#  Clasificador IT: Sistema Experto de Tickets
 
-## Descripción del Proyecto
+# Clasificador IT: Sistema Experto de Tickets
 
-Este proyecto es un **Sistema Experto** que utiliza lógica y una base de conocimiento para analizar la descripción o el síntoma principal de un ticket de soporte de TI y luego:
+## Descripción
 
-1.  **Clasificar** el ticket en una **Categoría** (por ejemplo: Software, Hardware, Redes).
-2.  **Sugerir** el **Técnico** o el equipo más adecuado para resolverlo.
+Este proyecto es un sistema experto para la clasificación automática de tickets de soporte IT. Analiza el síntoma principal de cada ticket y:
 
-El objetivo es automatizar la asignación de tickets, mejorando los tiempos de respuesta y la eficiencia del soporte.
+1. Clasifica el ticket en una categoría (por ejemplo: Software, Hardware, Redes).
+2. Sugiere el técnico o equipo más adecuado para resolverlo.
 
------
+El objetivo es mejorar la eficiencia y los tiempos de respuesta del soporte técnico.
 
-## 🧭 Cómo funciona (paso a paso)
+---
 
-1) Interfaz web (frontend)
+## Cómo funciona
 
-- Archivo: `interfaz/templates/index.html`.
-- El usuario elige categoría (Hardware/Software) y selecciona un síntoma.
-- La vista muestra una previsualización inmediata de Categoría, Técnico, Regla y una solución base.
-- Al pulsar "Enviar":
-  - Para 4 síntomas específicos se activa el Asistente de 3 pasos (Sí/No).
-  - Para el resto, se usa el flujo clásico (clasificación directa) contra la API.
-  - Resiliencia de UI: si el endpoint iterativo no está disponible, la UI hace fallback automático al flujo clásico sin mostrar popups de error.
+### Interfaz web
 
-2) API (backend)
+- Ubicada en `interfaz/templates/index.html`.
+- El usuario selecciona la categoría y el síntoma.
+- La interfaz muestra una previsualización de la categoría, técnico sugerido, regla aplicada y solución base.
+- Al enviar, para ciertos síntomas se activa un asistente paso a paso; para el resto, se usa el flujo clásico.
 
-- Archivo: `main.py` (FastAPI).
+### API (backend)
+
+- Implementada en `main.py` usando FastAPI.
 - Endpoints principales:
-  - POST `/clasificar_ticket/`: flujo clásico (categoría + técnico + explicación + sugerencias).
-  - POST `/clasificar_ticket_iterativo/`: flujo iterativo (devuelve regla + múltiples soluciones y sugerencias futuras).
-- La base de conocimiento (`experto_general/base_conocimiento.py`) define reglas y técnicos por categoría.
+  - `/clasificar_ticket/`: clasificación clásica.
+  - `/clasificar_ticket_iterativo/`: asistente iterativo con varias soluciones.
+- La lógica de reglas y técnicos está en `experto_general/base_conocimiento.py`.
 - Los motores de inferencia están en `experto_general/acciones.py`.
 
-3) Resultado mostrado en la UI
+### Resultado
 
-- Categoría asignada y Técnico sugerido.
-- Regla aplicada y una solución de la regla.
-- Sugerencias adicionales (hasta 2) para el flujo clásico.
-
----
-
-## ✅ Asistente de 3 pasos (Sí / No)
-
-- Activo solo para estos síntomas:
-  - Software: `aplicacion_crash`, `lentitud_sistema` (ambos usan R-SW-01 con 3 soluciones).
-  - Hardware: `memoria_ram_defectuosa` (R-HW-RAM-01), `monitor_no_enciende` (R-HW-MON-01).
-- Funcionamiento:
-  1. La UI llama a `/clasificar_ticket_iterativo/` y toma la primera regla aplicable.
-  2. Muestra hasta 3 soluciones (máximo) de esa regla, una por vez.
-  3. Si el usuario marca "No" en las 3, se deriva automáticamente a "Técnico en línea" (marca "Otra causa" y ejecuta el flujo clásico una vez para registrar).
-  4. Si marca "Sí, funcionó" en cualquier paso, el asistente se cierra y queda marcada la solución en pantalla.
-
-Notas de implementación:
-
-- En el frontend, `MAX_STEPS = 3` y las soluciones se recortan con `slice(0, 3)`.
-- No se cambia de regla ni se usa `historial` en la UI; se trabaja solo con la primera regla candidata.
-- Si el servicio iterativo no responde, se oculta el asistente y se ejecuta el flujo clásico como alternativa silenciosa.
+- Se muestra la categoría, técnico sugerido, regla aplicada y solución.
+- Para el flujo clásico, se pueden mostrar hasta dos sugerencias adicionales.
 
 ---
 
-## 🔌 Endpoints disponibles
+## Asistente paso a paso
 
-- POST `/clasificar_ticket/`
-  - Entrada: `TicketFacts` (ver sección siguiente).
-  - Salida: `categoria`, `tecnico_responsable`, `sintoma`, `explicacion` (id/titulo/descripcion/solucion_regla), `soluciones_sugeridas` (0-2), `solucion_sugerida` (compatibilidad).
-
-- POST `/clasificar_ticket_iterativo/`
-  - Entrada: `{ "facts": TicketFacts, "historial": ["R-XYZ-01", ...] }`.
-  - Salida: `categoria`, `tecnico_responsable`, `sintoma`, `regla_id`, `explicacion` (id/titulo/descripcion), `soluciones` (lista), `sugerencias_futuras`.
-
-- Salud y utilidades:
-  - GET `/healthz`
-  - POST `/feedback`, GET `/feedback/metrics`
-  - POST/GET `/nuevos_sintomas`, GET `/nuevos_sintomas/export/html`
-  - GET `/consultas`, `/consultas/metrics`, `/consultas/export/html`, `/consultas/export/csv`
-    - Parámetros opcionales: `?date=YYYY-MM-DD` o `?all=true` para leer un día específico o agregar todos los archivos rotados.
-    - Nuevos auxiliares: `GET /consultas/files` (lista archivos) y `POST /consultas/purge?date=YYYY-MM-DD` o `?all=true`.
+- Activo solo para síntomas específicos (por ejemplo: aplicación se cierra, lentitud, memoria RAM defectuosa, monitor no enciende).
+- Muestra hasta tres soluciones posibles, una por vez.
+- Si ninguna funciona, deriva automáticamente al técnico en línea.
+- Si alguna funciona, el asistente finaliza y muestra la solución.
 
 ---
 
-## 🧱 Modelo de entrada: TicketFacts
+## Endpoints principales
 
-Flags principales (booleanas) más campos de “otra causa”:
+- `/clasificar_ticket/`: recibe los datos del ticket y devuelve la clasificación y sugerencias.
+- `/clasificar_ticket_iterativo/`: recibe los datos y el historial, devuelve la regla, soluciones y sugerencias futuras.
+- Otros endpoints: `/healthz`, `/feedback`, `/nuevos_sintomas`, `/consultas` y utilidades para métricas y exportación.
 
-- Hardware: `pc_no_enciende`, `periferico_roto`, `tarjeta_video_falla`, `ram_falla`, `disco_falla`, `monitor_sin_senal`, `psu_falla`, `sobrecalentamiento`.
+---
+
+## Modelo de entrada
+
+El sistema espera un objeto con flags booleanos para cada síntoma relevante, por ejemplo:
+
+- Hardware: `pc_no_enciende`, `ram_falla`, `monitor_sin_senal`, etc.
 - Red: `no_puede_conectar_wifi`, `sin_acceso_internet`.
-- Software: `programa_se_cierra`, `lentitud_sistema`, `actualizaciones_fallidas`, `incompatibilidad_software`, `software_corporativo_falla`.
-- Permisos: `acceso_denegado`, `no_puede_instalar`.
-- Seguridad: `email_sospechoso`, `malware_detectado`.
-- Especial: `otra_causa` (bool), `otra_descripcion` (str | null).
+- Software: `programa_se_cierra`, `lentitud_sistema`, etc.
+- Permisos y seguridad: `acceso_denegado`, `malware_detectado`.
+- Especial: `otra_causa` y `otra_descripcion`.
 
-Contrato de uso:
-- La UI envía solo un síntoma activo (un flag True) por vez. Si `otra_causa=True`, se prioriza “Técnico en línea”.
+Solo un síntoma debe estar activo por vez.
 
 ---
 
-## 🧪 Pruebas
+## Pruebas
 
-Ejecuta los tests con pytest (opcional):
+Para ejecutar las pruebas automáticas:
 
 ```powershell
 python -m pytest -q
@@ -107,216 +80,87 @@ python -m pytest -q
 
 ---
 
-## 🛟 Problemas comunes
+## Problemas comunes
 
-- Backend no disponible: la UI ya no muestra popups intrusivos. Verás un mensaje inline en el panel de resultado indicando “Sin conexión (backend no disponible)”.
-  - Asegúrate de tener la API arriba en `http://127.0.0.1:8000`.
-  - Si abriste la UI como archivo (`file://`), algunos navegadores bloquean fetch; usa el servidor local (`http://127.0.0.1:8001`).
-
-- El botón “Enviar” vuelve a la pantalla anterior.
-  - Todos los botones tienen `type="button"` y los handlers usan `preventDefault()`; haz un hard refresh (Ctrl+F5) para tomar el JS actualizado.
+- Si el backend no está disponible, la interfaz muestra un mensaje de error y hace fallback automático.
+- Si el botón "Enviar" no responde, refrescar la página y asegurarse de que la API esté corriendo.
 
 ---
 
-## 🧹 Limpieza y artefactos locales
+## Limpieza y archivos ignorados
 
-- No se versionan: `venv/`, caches (`__pycache__/`, `.pytest_cache/`), y la carpeta `data/` (excepto `data/data.db`).
-- Excepción en `.gitignore`: `!data/data.db` para que la base SQLite sea visible/versionable.
-- La aplicación crea `./data/` automáticamente y genera ahí los archivos cuando la API corre.
-- Rotación de consultas: los logs se guardan como `data/consultas-YYYY-MM-DD.jsonl`. Los endpoints aceptan `date` o `all` para seleccionar archivos.
-- Limpieza de legado: si existe `data/consultas.jsonl`, se elimina automáticamente al iniciar (el log activo es el rotado por fecha).
+- No se versionan carpetas de entorno virtual, cachés ni archivos temporales.
+- La carpeta `data/` solo versiona la base de datos principal y los logs relevantes.
+- La aplicación crea y rota los archivos de datos automáticamente.
 
 ---
 
-## 📦 Cómo ejecutar (resumen)
+## Ejecución rápida
 
-1) API (puerto 8000):
+1. Instalar dependencias:
+   ```powershell
+   pip install -r requirements.txt
+   ```
 
-```powershell
-python -m uvicorn main:app --reload --host 127.0.0.1 --port 8000
-```
+2. Iniciar la API:
+   ```powershell
+   python -m uvicorn main:app --reload --host 127.0.0.1 --port 8000
+   ```
 
-2) UI opcional (servidor en 8001):
+3. (Opcional) Iniciar el servidor de la interfaz:
+   ```powershell
+   python -m uvicorn interfaz.app_visual:app --reload --host 127.0.0.1 --port 8001
+   ```
 
-```powershell
-python -m uvicorn interfaz.app_visual:app --reload --host 127.0.0.1 --port 8001
-```
+4. Abrir la interfaz web en el navegador:
+   - Si usás el servidor: http://127.0.0.1:8001/
+   - O abrir directamente el archivo `index.html` si la API está corriendo.
 
-3) O abrir la UI directamente (requiere la API arriba):
+---
 
-```powershell
-start .\interfaz\templates\index.html
-```
-
-
-## ✨ Características Principales
-
-  * **Clasificación Lógica:** El sistema aplica un conjunto de reglas (la "Base de Conocimiento") para determinar la categoría del ticket.
-  * **Sugerencia de Experto:** Asigna el ticket al técnico o especialista responsable según la categoría clasificada.
-  * **Interfaz Web Simple:** Permite a los usuarios o a otros sistemas ingresar el síntoma y obtener la clasificación al instante.
-  * **Diseño Modular:** El código está organizado en módulos claros para la lógica (`experto_general`), los modelos de datos y la interfaz.
-
------
-
-## 🛠️ Estructura del Proyecto
-
-Tu estructura es clara y funcional. Aquí se explica el rol de cada componente principal:
+## Estructura del proyecto
 
 ```
-├── experto_general/              # Lógica del Sistema Experto (reglas e inferencia)
-│   ├── acciones.py               # Motores de inferencia y utilidades
-│   ├── base_conocimiento.py      # Reglas (con 3 soluciones para algunos síntomas)
-│   └── modelos.py                # Modelos/datatypes
-├── interfaz/
-│   ├── app_visual.py             # ASGI para servir la UI estática (opcional)
-│   └── templates/
-│       └── index.html            # Interfaz web del clasificador
-├── tests/
-│   └── test_acciones.py          # Pruebas básicas
-├── main.py                       # FastAPI app (endpoints)
-├── requirements.txt              # Dependencias
-└── README.md
+experto_general/        # Lógica y reglas del sistema experto
+interfaz/               # Interfaz web y servidor opcional
+tests/                  # Pruebas automáticas
+main.py                 # API principal (FastAPI)
+requirements.txt        # Dependencias
+README.md               # Documentación
 ```
 
------
+---
 
-## 🚀 Cómo Ponerlo en Marcha
+## Requisitos
 
-### Prerequisitos
+- Python 3.x
+- (Opcional) Entorno virtual
 
-  * **Python 3.x**
-  * (Opcional, pero recomendado) Un entorno virtual (`venv`)
+---
 
-### Instalación
+## Instalación
 
-1.  **Clonar el repositorio:**
-    ```bash
-    git clone <URL-del-repositorio>
-    cd nombre-del-proyecto
-    ```
-2.  **Crear y activar el entorno virtual:**
-    ```bash
-    python3 -m venv .venv
-    source .venv/bin/activate
-    ```
-3.  **Instalar dependencias:**
-    ```bash
-    pip install -r requirements.txt
-    ```
+1. Clonar el repositorio:
+   ```powershell
+   git clone <URL-del-repositorio>
+   cd <nombre-del-proyecto>
+   ```
 
-### Uso
+2. Crear y activar el entorno virtual (opcional):
+   ```powershell
+   python -m venv .venv
+   .\.venv\Scripts\activate
+   ```
 
-Para ejecución local, sigue la sección "Cómo ejecutar localmente (API + UI)" más abajo (usa Uvicorn para levantar la API y, opcionalmente, servir la UI). 
+3. Instalar dependencias:
+   ```powershell
+   pip install -r requirements.txt
+   ```
 
+---
 
-## ▶️ Cómo ejecutar localmente (API + UI)
+## Contacto y soporte
 
-Este proyecto usa FastAPI para el backend y una entrada ligera para servir la SPA desde `interfaz/`.
-
-1) Iniciar la API (puerto 8000):
-
-```powershell
-# desde la raíz del proyecto
-python -m uvicorn main:app --reload --host 127.0.0.1 --port 8000
-```
-
-2) Iniciar la UI (servidor para la plantilla estática, puerto 8001):
-
-```powershell
-# desde la raíz del proyecto
-python -m uvicorn interfaz.app_visual:app --reload --host 127.0.0.1 --port 8001
-```
-
-3) Abrir en el navegador:
-
-- UI: http://127.0.0.1:8001/
-- API (ejemplo de salud): http://127.0.0.1:8000/
-
-### Alternativa rápida en Windows: abrir la UI con start index.html
-
-Si no deseas levantar el servidor de UI, puedes abrir la página directamente en el navegador y se conectará a la API en `http://127.0.0.1:8000`:
-
-```powershell
-# Desde la raíz del proyecto, abre la UI directamente
-start .\interfaz\templates\index.html
-```
-
-Notas:
-
-- Asegúrate de tener la API corriendo en `http://127.0.0.1:8000` antes de abrir el HTML, de lo contrario verás el mensaje "No se pudo conectar con el servicio de clasificación".
-- Si tu navegador bloquea solicitudes desde `file://`, usa la opción recomendada con servidor de UI en `http://127.0.0.1:8001`.
-
-## 🔁 Nota sobre Pydantic
-
-Se actualizó el proyecto para evitar la advertencia de deprecación de Pydantic v2: llamadas a `BaseModel.dict()` fueron migradas a `BaseModel.model_dump()` donde correspondía (por ejemplo en `main.py`). Los tests pasan y no se esperan cambios de comportamiento.
-
------
-
-## 🧩 Clasificación iterativa con múltiples soluciones
-
-Además del endpoint clásico `/clasificar_ticket/`, el sistema incluye un flujo iterativo que devuelve múltiples pasos de solución y recomendaciones futuras, evitando repetir reglas ya sugeridas.
-
-Endpoint:
-
-- POST `/clasificar_ticket_iterativo/`
-
-Cuerpo (JSON):
-
-```json
-{
-  "facts": {
-    "pc_no_enciende": false,
-    "periferico_roto": false,
-    "tarjeta_video_falla": false,
-    "no_puede_conectar_wifi": true,
-    "sin_acceso_internet": false,
-    "programa_se_cierra": false,
-    "lentitud_sistema": false,
-    "acceso_denegado": false,
-    "no_puede_instalar": false,
-    "email_sospechoso": false,
-    "otra_causa": false,
-    "otra_descripcion": null
-  },
-  "historial": ["R-RED-01"]
-}
-```
-
-Respuesta (ejemplo):
-
-```json
-{
-  "categoria": "Red",
-  "tecnico_responsable": "Técnica María (Especialista en Redes/Conectividad)",
-  "sintoma": "no_puede_conectar_wifi",
-  "regla_id": "R-RED-01",
-  "explicacion": {
-    "id": "R-RED-01",
-    "titulo": "Problema de conexión WiFi / Internet",
-    "descripcion": "Si no puede conectar al WiFi o no tiene acceso a Internet, clasificar como Red."
-  },
-  "soluciones": [
-    "Comprobar que el SSID y la contraseña sean correctos.",
-    "Olvidar y volver a conectarse a la red.",
-    "Renovar IP (DHCP) y limpiar DNS.",
-    "Reiniciar router/switch y verificar luz de enlace.",
-    "Probar conectividad por cable para aislar WiFi."
-  ],
-  "sugerencias_futuras": [
-    "Escalar a NOC si hay caída general.",
-    "Registrar el incidente con hora y ubicación para correlación."
-  ]
-}
-```
-
-Notas:
-
-- La UI actual no usa `historial` ni cambia de regla: el asistente muestra hasta 3 opciones de la primera regla aplicable y, si ninguna funciona, deriva automáticamente al técnico en línea.
-- El registro automático de nuevos síntomas desde la UI está desactivado; los endpoints relacionados (`/nuevos_sintomas`) permanecen disponibles para uso manual o integraciones futuras.
-
------
-
-
-
+Para dudas, sugerencias o reportes de errores, podés abrir un issue en el repositorio o contactar al mantenedor.
 
 
