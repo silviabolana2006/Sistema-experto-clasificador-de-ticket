@@ -1,0 +1,1270 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema Experto Clasificador de Ticket IT</title>
+    <style>
+        :root {
+            --primary-color: #19425c;
+            --secondary-color: #60858c;
+            --accent-color: #2c5b7b;
+            --light-color: #ecf0f1;
+            --dark-color: #0f3b68;
+            --success-color: #878aaa;
+            --danger-color: #5d5568;
+            --warning-color: #cdb793;
+            --info-color: #3498db;
+            --border-color: #72797e;
+            --shadow-color: rgba(162, 143, 143, 0.1);
+            --nav-color: #34444f;
+            --nav-text-color: white;
+            --footer-color: #183755;
+            --footer-text-color: white;
+            --card-bg: rgba(255, 255, 255, 0.955);
+            --card-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            --transition: all 0.3s ease;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: #f8f9fa;
+            color: var(--dark-color);
+            line-height: 1.6;
+            padding: 0;
+            margin: 0;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: rgb(129, 143, 187);
+            text-align: center;
+            padding: 2rem 0;
+            border-radius: 0 0 20px 20px;
+            box-shadow: var(--card-shadow);
+            margin-bottom: 2rem;
+        }
+
+        h1 {
+            color: white;
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .subtitle {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            margin-top: 0.5rem;
+        }
+
+        /* Indicador de estado de API */
+        .status-wrap { margin-top: 0.75rem; display: flex; justify-content: center; gap: 8px; align-items: center; }
+        .status-badge {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 4px 10px; border-radius: 14px; font-size: 0.9rem; font-weight: 600;
+            border: 1px solid var(--border-color); background: rgba(255,255,255,0.15); color: #fff;
+        }
+        .status-badge::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: #bbb; display: inline-block; }
+        .status-ok { border-color: #1e7e34; background: rgba(46, 204, 113, 0.2); color: #eafff3; }
+        .status-ok::before { background: #2ecc71; }
+        .status-down { border-color: #c0392b; background: rgba(192, 57, 43, 0.2); color: #ffecec; }
+        .status-down::before { background: #e74c3c; }
+        .status-unknown { border-color: #95a5a6; background: rgba(149, 165, 166, 0.2); color: #ecf0f1; }
+        .status-unknown::before { background: #95a5a6; }
+    .status-warn { border-color: #c9a227; background: rgba(241, 196, 15, 0.2); color: #fff7d6; }
+    .status-warn::before { background: #f1c40f; }
+    .retry-btn { border: 1px solid var(--border-color); background: rgba(255,255,255,0.15); color: #fff; padding: 4px 8px; border-radius: 12px; font-size: 0.85rem; cursor: pointer; }
+    .retry-btn:hover { background: rgba(255,255,255,0.25); }
+
+        .main-content {
+            display: flex;
+            gap: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .button-container {
+            flex: 1;
+            min-width: 300px;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .btn {
+            padding: 1rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 1.1rem;
+            transition: var(--transition);
+            text-align: center;
+            box-shadow: 0 2px 5px var(--shadow-color);
+            position: relative;
+            overflow: hidden;
+            z-index: 1;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.2);
+            z-index: -1;
+            transition: var(--transition);
+        }
+
+        .btn:hover::before {
+            left: 0;
+        }
+
+        .btn-hardware {
+            background-color: var(--danger-color);
+            color: white;
+            border: 2px solid #4c3937;
+        }
+
+        .btn-hardware:hover {
+            background-color: #c0392b;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px var(--shadow-color);
+        }
+
+        .btn-software {
+            background-color: var(--info-color);
+            color: white;
+            border: 2px solid #2980b9;
+        }
+
+        .btn-software:hover {
+            background-color: #2980b9;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px var(--shadow-color);
+        }
+
+        .symptom-list {
+            display: none;
+            background-color: var(--card-bg);
+            border-radius: 10px;
+            padding: 1.5rem;
+            box-shadow: var(--card-shadow);
+            margin-top: 1rem;
+            max-height: 400px;
+            overflow-y: auto;
+            border: 1px solid var(--border-color);
+        }
+
+        .symptom-list h3 {
+            color: var(--dark-color);
+            margin-bottom: 1rem;
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .symptom-item {
+            padding: 0.75rem 1rem;
+            margin: 0.5rem 0;
+            background-color: var(--light-color);
+            border-radius: 6px;
+            cursor: pointer;
+            transition: var(--transition);
+            border-left: 4px solid transparent;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .symptom-item:hover {
+            background-color: #dfe6e9;
+            border-left: 4px solid var(--accent-color);
+        }
+
+        .symptom-item.selected {
+            background-color: var(--accent-color);
+            color: white;
+            border-left: 4px solid white;
+        }
+
+        .symptom-item.selected::after {
+            content: '✓';
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-weight: bold;
+        }
+
+        .ticket-form {
+            display: none;
+            flex: 2;
+            min-width: 500px;
+            background-color: var(--card-bg);
+            border-radius: 10px;
+            padding: 2rem;
+            box-shadow: var(--card-shadow);
+            border: 1px solid var(--border-color);
+        }
+
+        .form-header {
+            color: var(--primary-color);
+            font-size: 1.8rem;
+            margin-bottom: 1rem;
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .step-title {
+            font-size: 1.3rem;
+            margin: 1.5rem 0 1rem 0;
+            color: var(--dark-color);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .selected-symptom {
+            background-color: var(--light-color);
+            padding: 0.75rem 1rem;
+            border-radius: 6px;
+            margin: 0.5rem 0;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .checkbox-container {
+            display: flex;
+            align-items: center;
+            margin: 1rem 0;
+            padding: 0.5rem;
+            border-radius: 6px;
+            background-color: #f8f9fa;
+        }
+
+        .checkbox-container input[type="checkbox"] {
+            margin-right: 0.5rem;
+            width: 18px;
+            height: 18px;
+            accent-color: var(--primary-color);
+        }
+
+        textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            resize: vertical;
+            min-height: 100px;
+            font-size: 1rem;
+            margin: 0.5rem 0;
+            font-family: inherit;
+            transition: var(--transition);
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+        }
+
+        .button-group {
+            display: flex;
+            gap: 1rem;
+            margin: 1.5rem 0;
+        }
+
+        .btn-secondary {
+            background-color: #95a5a6;
+            color: white;
+            border: 2px solid #7f8c8d;
+        }
+
+        .btn-secondary:hover {
+            background-color: #7f8c8d;
+        }
+
+        .btn-primary {
+            background-color: var(--secondary-color);
+            color: white;
+            border: 2px solid #1a5276;
+        }
+
+        .btn-primary:hover {
+            background-color: #1a5276;
+        }
+
+        /* Resalte temporal para guiar al usuario en "Otra causa" */
+        .btn-primary.attention {
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.35), 0 6px 12px var(--shadow-color);
+            transform: translateY(-1px);
+        }
+
+        .result-section {
+            background-color: #e8f8f5;
+            padding: 1.5rem;
+            border-radius: 8px;
+            margin: 1.5rem 0;
+            border-left: 4px solid var(--success-color);
+            border: 1px solid #bdc3c7;
+        }
+
+        .result-section h4 {
+            color: var(--dark-color);
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        /* Ocultar placeholders <i> usados antes para iconos y evitar sangrías visuales */
+        .symptom-list h3 i,
+        .result-section h4 i { display: none; }
+
+        .result-section p {
+            margin: 0.5rem 0;
+        }
+
+        .print-btn {
+            background-color: #8e44ad;
+            color: white;
+            border: 2px solid #7d3c98;
+            padding: 0.75rem 1.5rem;
+            font-weight: 600;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 1rem 0;
+            display: inline-block;
+            transition: var(--transition);
+        }
+
+        .print-btn:hover {
+            background-color: #7764c2;
+            transform: translateY(-2px);
+        }
+
+        .save-info {
+            font-size: 0.9rem;
+            color: #7f8c8d;
+            margin: 1rem 0;
+            padding: 0.5rem;
+            background-color: #f8f9fa;
+            border-radius: 6px;
+        }
+
+        .feedback-section {
+            margin-top: 1.5rem;
+            padding-top: 1rem;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .feedback-question {
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .feedback-buttons {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .btn-yes {
+            background-color: var(--success-color);
+            color: white;
+            border: 2px solid #229954;
+        }
+
+        .btn-yes:hover {
+            background-color: #229954;
+        }
+
+        .btn-no {
+            background-color: var(--danger-color);
+            color: white;
+            border: 2px solid #c0392b;
+        }
+
+        .btn-no:hover {
+            background-color: #c0392b;
+        }
+
+        /* Asistente paso a paso */
+        .step-solver {
+            background-color: #fff;
+            border: 1px dashed var(--border-color);
+            border-left: 4px solid var(--info-color);
+            padding: 1rem;
+            margin: 1rem 0;
+            border-radius: 8px;
+        }
+        .step-solver h4 { margin-bottom: 0.5rem; }
+        .step-solver p { margin-bottom: 0.75rem; }
+
+        .go-button {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 60px;
+            height: 60px;
+            background-color: var(--primary-color);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            cursor: pointer;
+            transition: var(--transition);
+            z-index: 1000;
+        }
+
+        .go-button:hover {
+            background-color: var(--secondary-color);
+            transform: scale(1.1);
+        }
+
+        .go-button i {
+            transform: rotate(-45deg);
+        }
+
+        footer {
+            background-color: var(--footer-color);
+            color: var(--footer-text-color);
+            text-align: center;
+            padding: 1.5rem 0;
+            margin-top: 2rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .footer-content {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            flex-wrap: wrap;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .footer-section {
+            text-align: left;
+        }
+
+        .footer-section h4 {
+            margin-bottom: 0.5rem;
+            color: white;
+        }
+
+        .footer-section p {
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                flex-direction: column;
+            }
+            
+            .button-container, .ticket-form {
+                min-width: 100%;
+            }
+            
+            h1 {
+                font-size: 2rem;
+            }
+            
+            .form-header {
+                font-size: 1.5rem;
+            }
+            
+            .go-button {
+                width: 50px;
+                height: 50px;
+                font-size: 1.2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Sistema Experto Clasificador de Ticket IT</h1>
+            <p class="subtitle">Diagnóstico inteligente para tickets de soporte técnico</p>
+            <div class="status-wrap">
+                <span id="apiStatus" class="status-badge status-unknown">Comprobando…</span>
+                <button type="button" id="apiRetry" class="retry-btn" title="Reintentar conexión">Reintentar</button>
+            </div>
+        </header>
+
+        <div class="main-content">
+            <div class="button-container">
+                <button type="button" class="btn btn-hardware" id="hardwareBtn">Hardware</button>
+                <div class="symptom-list" id="hardwareSymptoms">
+                    <h3><i></i> Síntomas de Hardware</h3>
+                    <div class="symptom-item" data-symptom="periferico_roto">Periférico roto (ratón/teclado)</div>
+                    <div class="symptom-item" data-symptom="monitor_no_enciende">Monitor no enciende</div>
+                    <div class="symptom-item" data-symptom="computadora_no_arranca">Computadora no arranca</div>
+                    <div class="symptom-item" data-symptom="disco_duro_falla">Disco duro falla</div>
+                    <div class="symptom-item" data-symptom="sobrecalentamiento">Sobrecalentamiento</div>
+                    <div class="symptom-item" data-symptom="problemas_conectividad">Problemas de conectividad (USB, HDMI, etc.)</div>
+                    <div class="symptom-item" data-symptom="fuente_poder_falla">Fuente de poder falla</div>
+                    <div class="symptom-item" data-symptom="memoria_ram_defectuosa">Memoria RAM defectuosa</div>
+                    <div class="symptom-item" data-symptom="tarjeta_video_falla">Tarjeta de video falla</div>
+                    <div class="symptom-item" data-symptom="otros_hardware">Otros problemas de hardware</div>
+                </div>
+
+                <button type="button" class="btn btn-software" id="softwareBtn">Software</button>
+                <div class="symptom-list" id="softwareSymptoms">
+                    <h3><i></i> Síntomas de Software</h3>
+                    <div class="symptom-item" data-symptom="aplicacion_crash">Aplicación se cierra inesperadamente</div>
+                    <div class="symptom-item" data-symptom="lentitud_sistema">Lentitud del sistema</div>
+                    <div class="symptom-item" data-symptom="virus_malware">Virus o malware detectado</div>
+                    <div class="symptom-item" data-symptom="actualizaciones_fallas">Fallas en actualizaciones</div>
+                    <div class="symptom-item" data-symptom="acceso_denegado">Acceso denegado a recursos</div>
+                    <div class="symptom-item" data-symptom="configuracion_red">Problemas de configuración de red</div>
+                    <div class="symptom-item" data-symptom="incompatibilidad_software">Incompatibilidad de software</div>
+                    <div class="symptom-item" data-symptom="error_instalacion">Error en instalación de programas</div>
+                    <div class="symptom-item" data-symptom="base_datos_corrupta">Base de datos corrupta</div>
+                    <div class="symptom-item" data-symptom="otros_software">Otros problemas de software</div>
+                </div>
+            </div>
+
+            <div class="ticket-form" id="ticketForm">
+                <h2 class="form-header"><i></i> Clasificador de Tickets IT</h2>
+                <h3 class="step-title"><i></i> Revisar y enviar</h3>
+                
+                <div class="selected-symptom" id="selectedSymptomDisplay"><i></i> Síntoma seleccionado: <span id="selectedSymptomText">-</span></div>
+                
+                <div class="checkbox-container">
+                    <input type="checkbox" id="otherCause" name="otherCause">
+                    <label for="otherCause">Otra causa (derivar a técnico en línea). Añadir descripción:</label>
+                </div>
+                
+                <textarea id="description" placeholder="Escriba aquí su descripción detallada..."></textarea>
+                
+                <div class="button-group">
+                    <button type="button" class="btn btn-secondary" id="backBtn">Volver</button>
+                    <button type="button" class="btn btn-primary" id="sendBtn">Enviar</button>
+                </div>
+                
+                <div class="result-section">
+                    <h4><i></i> Categoría: <span id="categoryResult">Otra causa</span></h4>
+                    <h4><i></i> Técnico: <span id="technicianResult">Técnico en línea (Soporte Remoto)</span></h4>
+                    <h4><i></i> Regla: <span id="ruleResult">Periférico roto</span></h4>
+                    <p><strong>Solución (regla):</strong> <span id="solutionResult">Sustituir o reparar el periférico. Probar con otro puerto/maquina.</span></p>
+                    <div id="iterativeSolutions" style="margin-top: 0.75rem; display: none;">
+                        <h4>Soluciones propuestas (paso a paso)</h4>
+                        <ul id="solutionsList" style="margin-left: 1.25rem;"></ul>
+                        <h4 style="margin-top:0.5rem;">Sugerencias futuras</h4>
+                        <ul id="futureSuggestionsList" style="margin-left: 1.25rem;"></ul>
+                    </div>
+                    <div>
+                        <p><strong>Sugerencias:</strong></p>
+                        <ul id="suggestedSolutionsList" style="margin-left: 1.25rem;"></ul>
+                    </div>
+
+                    <!-- Asistente de solución específico para algunos síntomas -->
+                    <div id="stepSolver" class="step-solver" style="display:none;">
+                        <h4>Asistente de solución</h4>
+                        <p id="currentStepText">—</p>
+                        <div class="feedback-buttons">
+                            <button type="button" class="btn btn-yes" id="stepYesBtn">Sí, funcionó</button>
+                            <button type="button" class="btn btn-no" id="stepNoBtn">No</button>
+                        </div>
+                        <small>Si ninguna opción resuelve, derivaremos a soporte en línea.</small>
+                    </div>
+                </div>
+                
+                <button type="button" class="print-btn" id="printBtn"><i>🖨️</i> Imprimir ticket</button>
+                
+                <div class="save-info" id="sugInfo">Sugerencias recientes (total: ...)</div>
+                
+                <div class="feedback-section">
+                    <div class="feedback-question"><i></i> ¿La categoría sugerida fue correcta?</div>
+                    <div class="feedback-buttons">
+                        <button type="button" class="btn btn-yes" id="feedbackYes">Sí</button>
+                        <button type="button" class="btn btn-no" id="feedbackNo">No</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="go-button" id="goButton">↑</div>
+
+    <footer>
+        <div class="footer-content">
+            <div class="footer-section">
+                <h4>Sistema Experto IT</h4>
+                <p>Clasificación inteligente de tickets para optimizar el soporte técnico</p>
+            </div>
+            <div class="footer-section">
+                <h4>Contacto</h4>
+                <p>soporte@it-experto.com</p>
+                <p>+52 55 1234 5678</p>
+            </div>
+            <div class="footer-section">
+                <h4>Horario</h4>
+                <p>Lunes a Viernes: 8:00 - 20:00</p>
+                <p>Sábados: 9:00 - 15:00</p>
+            </div>
+        </div>
+        <p style="margin-top: 1rem; font-size: 0.8rem; opacity: 0.7;">© 2023 Sistema Experto Clasificador de Ticket IT. Todos los derechos reservados.</p>
+    </footer>
+
+    <script>
+        // Variables globales
+    let selectedSymptom = '';
+    let selectedCategory = '';
+    let historial = [];
+    let lastFactsPayload = null;
+    // Estado del asistente paso a paso
+    // Activar asistente sólo para 2 de software y 2 de hardware
+    const stepSymptoms = new Set(['aplicacion_crash','lentitud_sistema','memoria_ram_defectuosa','monitor_no_enciende']);
+    let stepHistorial = [];
+    let stepSolutions = [];
+    let stepRuleId = null;
+    let stepIndex = 0;
+    const MAX_STEPS = 3; // después de 3 opciones, derivar a técnico
+
+    // Descubrir automáticamente el host de la API y preparar candidatos
+    function getApiBaseUrls() {
+        const host = (window.location && window.location.hostname) ? window.location.hostname : '127.0.0.1';
+        const bases = [
+            `http://${host}:8000`,
+            'http://127.0.0.1:8000',
+            'http://localhost:8000'
+        ];
+        // Quitar duplicados conservando orden
+        return [...new Set(bases)];
+    }
+
+        // Función para mostrar u ocultar listas de síntomas
+        function toggleSymptomList(listId) {
+            const lists = document.querySelectorAll('.symptom-list');
+            lists.forEach(list => {
+                if (list.id === listId) {
+                    list.style.display = 'block';
+                } else {
+                    list.style.display = 'none';
+                }
+            });
+        }
+
+        // Función para mostrar el formulario de ticket
+        function showTicketForm() {
+            document.getElementById('ticketForm').style.display = 'block';
+            document.querySelector('.button-container').style.display = 'none';
+        }
+
+        // Función para volver al menú principal
+        function showMainMenu() {
+            document.getElementById('ticketForm').style.display = 'none';
+            document.querySelector('.button-container').style.display = 'flex';
+            document.querySelectorAll('.symptom-list').forEach(list => list.style.display = 'none');
+        }
+
+        // Función para actualizar resultados según síntoma seleccionado
+        function updateResults(symptom) {
+            // Datos de ejemplo para diferentes síntomas
+            const symptomData = {
+                'periferico_roto': {
+                    category: 'Hardware',
+                    technician: 'Técnico Juan (Especialista en HW/Periféricos)',
+                    rule: 'Periférico roto',
+                    solution: 'Sustituir o reparar el periférico. Probar con otro puerto/maquina.',
+                    suggestedSolution: 'No hay una solución sugerida disponible.'
+                },
+                'monitor_no_enciende': {
+                    category: 'Hardware',
+                    technician: 'Técnico Juan (Especialista en HW/Periféricos)',
+                    rule: 'Monitor no enciende',
+                    solution: 'Verificar cables de alimentación y conexión. Probar con otro monitor.',
+                    suggestedSolution: 'Reemplazar el monitor si está dañado.'
+                },
+                'computadora_no_arranca': {
+                    category: 'Hardware',
+                    technician: 'Técnico Juan (Especialista en HW/Periféricos)',
+                    rule: 'Computadora no arranca',
+                    solution: 'Verificar fuente de poder, memoria RAM y disco duro. Reiniciar sistema.',
+                    suggestedSolution: 'Diagnosticar componentes internos.'
+                },
+                'aplicacion_crash': {
+                    category: 'Software',
+                    technician: 'Técnico Pedro (Especialista en Apps/Sistema Operativo)',
+                    rule: 'Aplicación se cierra inesperadamente',
+                    solution: 'Reinstalar aplicación. Verificar compatibilidad con sistema operativo.',
+                    suggestedSolution: 'Actualizar controladores y sistema operativo.'
+                },
+                'lentitud_sistema': {
+                    category: 'Software',
+                    technician: 'Técnico Pedro (Especialista en Apps/Sistema Operativo)',
+                    rule: 'Lentitud del sistema',
+                    solution: 'Limpiar archivos temporales, desactivar programas en inicio, verificar virus.',
+                    suggestedSolution: 'Aumentar memoria RAM o actualizar disco duro a SSD.'
+                },
+                'tarjeta_video_falla': {
+                    category: 'Hardware',
+                    technician: 'Técnico Juan (Especialista en HW/Periféricos)',
+                    rule: 'Tarjeta de video falla',
+                    solution: '1) Actualizar/reinstalar controladores (NVIDIA/AMD) usando DDU en modo seguro. 2) Verificar cable/puerto de video y seleccionar la GPU correcta en BIOS/Windows. 3) Revisar alimentación PCIe (cables de 6/8 pines) y fuente. 4) Comprobar temperaturas/ventiladores (limpieza de polvo, pasta térmica). 5) Probar la tarjeta en otro equipo o usar otra tarjeta para descartar falla.',
+                    suggestedSolution: 'Si persisten artefactos, pantallazos o no da video, escalar a reemplazo de GPU o diagnóstico de hardware especializado.'
+                },
+                'virus_malware': {
+                    category: 'Software',
+                    technician: 'Técnico Pedro (Especialista en Apps/Sistema Operativo)',
+                    rule: 'Virus o malware detectado',
+                    solution: 'Ejecutar escaneo completo con antivirus. Eliminar archivos infectados.',
+                    suggestedSolution: 'Instalar protección antivirus actualizada.'
+                },
+                'otros_hardware': {
+                    category: 'Hardware',
+                    technician: 'Técnico Juan (Especialista en HW/Periféricos)',
+                    rule: 'Otros problemas de hardware',
+                    solution: 'Describir el problema detalladamente para diagnóstico específico.',
+                    suggestedSolution: 'Contactar soporte técnico para evaluación.'
+                },
+                'otros_software': {
+                    category: 'Software',
+                    technician: 'Técnico Pedro (Especialista en Apps/Sistema Operativo)',
+                    rule: 'Otros problemas de software',
+                    solution: 'Describir el problema detalladamente para diagnóstico específico.',
+                    suggestedSolution: 'Contactar soporte técnico para evaluación.'
+                },
+                'acceso_denegado': {
+                    category: 'Permisos',
+                    technician: 'Técnica Ana (Administradora de Accesos)',
+                    rule: 'Acceso denegado a recursos',
+                    solution: 'Revisar permisos/roles del usuario y políticas de acceso.',
+                    suggestedSolution: 'Solicitar elevación temporal o ajuste de permisos según procedimiento.'
+                }
+            };
+
+            // Mapeo rápido de categoría por síntoma para vista previa inmediata
+            const categoryBySymptom = {
+                // Hardware
+                'periferico_roto': 'Hardware',
+                'monitor_no_enciende': 'Hardware',
+                'computadora_no_arranca': 'Hardware',
+                'disco_duro_falla': 'Hardware',
+                'sobrecalentamiento': 'Hardware',
+                'fuente_poder_falla': 'Hardware',
+                'memoria_ram_defectuosa': 'Hardware',
+                'tarjeta_video_falla': 'Hardware',
+                // Red
+                'configuracion_red': 'Red',
+                // Software
+                'aplicacion_crash': 'Software',
+                'lentitud_sistema': 'Software',
+                'actualizaciones_fallas': 'Software',
+                'incompatibilidad_software': 'Software',
+                'error_instalacion': 'Software',
+                'base_datos_corrupta': 'Software',
+                'otros_software': 'Software',
+                // Permisos
+                'acceso_denegado': 'Permisos',
+                // Seguridad
+                'virus_malware': 'Seguridad',
+                // Otros
+                'problemas_conectividad': 'Red',
+                'otros_hardware': 'Hardware'
+            };
+
+            // Mapeo de técnico por categoría para previsualización inmediata
+            const technicianByCategory = {
+                'Hardware': 'Técnico Juan (Especialista en HW/Periféricos)',
+                'Red': 'Técnica María (Especialista en Redes/Conectividad)',
+                'Software': 'Técnico Pedro (Especialista en Apps/Sistema Operativo)',
+                'Permisos': 'Técnica Ana (Administradora de Accesos)',
+                'Seguridad': 'Técnico Luis (Especialista en Ciberseguridad)',
+                'Sin clasificar (General)': 'Coordinador de Soporte',
+                '-': '—'
+            };
+
+            // Si el síntoma no está en nuestros datos, usar valores por defecto
+            const inferredCategory = categoryBySymptom[symptom] || '-';
+            const data = symptomData[symptom] || {
+                category: inferredCategory,
+                technician: technicianByCategory[inferredCategory] || '—',
+                rule: symptom,
+                solution: '-',
+                suggestedSolution: '-'
+            };
+
+            // Actualizar los elementos del resultado
+            document.getElementById('categoryResult').textContent = data.category;
+            document.getElementById('technicianResult').textContent = data.technician;
+            document.getElementById('ruleResult').textContent = data.rule;
+            document.getElementById('solutionResult').textContent = data.solution;
+            // Rellenar lista de sugerencias clásica (una por defecto)
+            const sugListInit = document.getElementById('suggestedSolutionsList');
+            if (sugListInit) {
+                sugListInit.innerHTML = '';
+                const li = document.createElement('li');
+                li.textContent = data.suggestedSolution || '—';
+                sugListInit.appendChild(li);
+            }
+        }
+
+        // Event listeners para botones de categoría
+        document.getElementById('hardwareBtn').addEventListener('click', function(e) { e.preventDefault(); e.stopPropagation();
+            selectedCategory = 'Hardware';
+            toggleSymptomList('hardwareSymptoms');
+        });
+
+        document.getElementById('softwareBtn').addEventListener('click', function(e) { e.preventDefault(); e.stopPropagation();
+            selectedCategory = 'Software';
+            toggleSymptomList('softwareSymptoms');
+        });
+
+        // Event listeners para items de síntomas
+        document.querySelectorAll('.symptom-item').forEach(item => {
+            item.addEventListener('click', function() {
+                // Quitar selección de otros ítems
+                document.querySelectorAll('.symptom-item').forEach(el => el.classList.remove('selected'));
+                // Añadir selección al ítem actual
+                this.classList.add('selected');
+                // Guardar síntoma seleccionado
+                selectedSymptom = this.getAttribute('data-symptom');
+                // Desmarcar "Otra causa" automáticamente al elegir un síntoma
+                const otherCb = document.getElementById('otherCause');
+                if (otherCb && otherCb.checked) otherCb.checked = false;
+                // Actualizar visualización
+                document.getElementById('selectedSymptomText').textContent = selectedSymptom;
+                // Limpiar descripción al cambiar de síntoma
+                const desc = document.getElementById('description');
+                if (desc) desc.value = '';
+                // Actualizar resultados
+                updateResults(selectedSymptom);
+                // Mostrar formulario
+                showTicketForm();
+            });
+        });
+
+        // Event listener para botón Volver
+    document.getElementById('backBtn').addEventListener('click', function(e){ e.preventDefault(); e.stopPropagation(); showMainMenu(); });
+
+        // Mapeo de síntomas de la UI a campos del backend
+        const symptomToBackend = {
+            'periferico_roto': 'periferico_roto',
+            'computadora_no_arranca': 'pc_no_enciende',
+            'monitor_no_enciende': 'monitor_sin_senal',
+            'disco_duro_falla': 'disco_falla',
+            'sobrecalentamiento': 'sobrecalentamiento',
+            'problemas_conectividad': 'no_puede_conectar_wifi',
+            'fuente_poder_falla': 'psu_falla',
+            'memoria_ram_defectuosa': 'ram_falla',
+            'tarjeta_video_falla': 'tarjeta_video_falla',
+            'aplicacion_crash': 'programa_se_cierra',
+            'lentitud_sistema': 'lentitud_sistema',
+            'virus_malware': 'malware_detectado',
+            'actualizaciones_fallas': 'actualizaciones_fallidas',
+            'acceso_denegado': 'acceso_denegado',
+            'configuracion_red': 'no_puede_conectar_wifi',
+            'incompatibilidad_software': 'incompatibilidad_software',
+            'error_instalacion': 'no_puede_instalar',
+            'base_datos_corrupta': 'software_corporativo_falla',
+            'otros_hardware': 'pc_no_enciende',
+            'otros_software': 'programa_se_cierra'
+        };
+
+        function buildFactsPayload() {
+            const other = document.getElementById('otherCause').checked;
+            const desc = document.getElementById('description').value || null;
+            const payload = {
+                pc_no_enciende: false,
+                periferico_roto: false,
+                tarjeta_video_falla: false,
+                ram_falla: false,
+                disco_falla: false,
+                monitor_sin_senal: false,
+                no_puede_conectar_wifi: false,
+                sin_acceso_internet: false,
+                programa_se_cierra: false,
+                lentitud_sistema: false,
+                acceso_denegado: false,
+                no_puede_instalar: false,
+                email_sospechoso: false,
+                software_corporativo_falla: false,
+                otra_causa: !!other,
+                otra_descripcion: other ? desc : null
+            };
+            const mapped = symptomToBackend[selectedSymptom];
+            if (mapped && !other) payload[mapped] = true;
+            return payload;
+        }
+
+        function renderIterative(res) {
+            document.getElementById('categoryResult').textContent = res.categoria || '-';
+            document.getElementById('technicianResult').textContent = res.tecnico_responsable || '-';
+            document.getElementById('ruleResult').textContent = (res.explicacion && res.explicacion.titulo) ? res.explicacion.titulo : (res.sintoma || '-');
+            const sols = Array.isArray(res.soluciones) ? res.soluciones : [];
+            document.getElementById('solutionResult').textContent = sols.length > 0 ? sols[0] : '—';
+            const list = document.getElementById('solutionsList');
+            const fut = document.getElementById('futureSuggestionsList');
+            list.innerHTML = '';
+            fut.innerHTML = '';
+            sols.forEach(s => { const li = document.createElement('li'); li.textContent = s; list.appendChild(li); });
+            const sf = Array.isArray(res.sugerencias_futuras) ? res.sugerencias_futuras : [];
+            sf.forEach(s => { const li = document.createElement('li'); li.textContent = s; fut.appendChild(li); });
+            document.getElementById('suggestedSolution').textContent = '—';
+        }
+
+        async function classifyIterative(resetHist) {
+            if (resetHist) historial = [];
+            const payloadFacts = buildFactsPayload();
+            lastFactsPayload = payloadFacts;
+            const urls = getApiBaseUrls().map(b => `${b}/clasificar_ticket_iterativo/`);
+            let data = null;
+            for (const url of urls) {
+                try {
+                    const resp = await fetch(url, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ facts: payloadFacts, historial })
+                    });
+                    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+                    data = await resp.json();
+                    break;
+                } catch (e) {
+                    console.warn('Fallo al clasificar (iterativo) en', url, e);
+                }
+            }
+            if (!data) {
+                console.warn('Iterativo no disponible; usando clasificación clásica como fallback.');
+                // Fallback silencioso a la clasificación clásica para no interrumpir al usuario
+                classifyWithBackend();
+                return;
+            }
+            if (data.regla_id && !historial.includes(data.regla_id)) historial.push(data.regla_id);
+            renderIterative(data);
+        }
+
+        // Clasificación clásica (solución de regla + sugerencia clásica)
+        async function classifyWithBackend() {
+            const payload = buildFactsPayload();
+            const urls = getApiBaseUrls().map(b => `${b}/clasificar_ticket/`);
+            let data = null;
+            for (const url of urls) {
+                try {
+                    const resp = await fetch(url, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+                    data = await resp.json();
+                    break;
+                } catch (e) {
+                    console.warn('Fallo al clasificar en', url, e);
+                }
+            }
+            if (!data) {
+                console.warn('Clásico no disponible; mostrando mensaje inline.');
+                // Mostrar un mensaje inline en vez de alertas intrusivas
+                document.getElementById('categoryResult').textContent = 'Sin conexión (backend no disponible)';
+                document.getElementById('technicianResult').textContent = '—';
+                document.getElementById('ruleResult').textContent = '—';
+                document.getElementById('solutionResult').textContent = 'No se pudo conectar con el servicio. Verifique que el servidor esté en 127.0.0.1:8000.';
+                const sugList = document.getElementById('suggestedSolutionsList');
+                if (sugList) { sugList.innerHTML = ''; }
+                return;
+            }
+            document.getElementById('categoryResult').textContent = data.categoria || '-';
+            document.getElementById('technicianResult').textContent = data.tecnico_responsable || '-';
+            document.getElementById('ruleResult').textContent = (data.explicacion && data.explicacion.titulo) ? data.explicacion.titulo : (data.sintoma || '-');
+            document.getElementById('solutionResult').textContent = (data.explicacion && data.explicacion.solucion_regla) ? data.explicacion.solucion_regla : '—';
+            // Mostrar dos sugerencias si están presentes
+            const sugList = document.getElementById('suggestedSolutionsList');
+            if (sugList) {
+                sugList.innerHTML = '';
+                const arr = Array.isArray(data.soluciones_sugeridas) ? data.soluciones_sugeridas : [];
+                if (arr.length > 0) {
+                    arr.slice(0,2).forEach(s => { const li = document.createElement('li'); li.textContent = s; sugList.appendChild(li); });
+                } else {
+                    const li = document.createElement('li'); li.textContent = data.solucion_sugerida || '—'; sugList.appendChild(li);
+                }
+            } else {
+                document.getElementById('suggestedSolution').textContent = data.solucion_sugerida || '—';
+            }
+        }
+
+        // Event listener para botón Enviar (clásico)
+        document.getElementById('sendBtn').addEventListener('click', function(e) { e.preventDefault(); e.stopPropagation();
+            // Si el síntoma requiere asistente, iniciar paso a paso
+            const other = document.getElementById('otherCause')?.checked;
+            if (!other && stepSymptoms.has(selectedSymptom)) {
+                startStepSolver();
+            } else {
+                classifyWithBackend();
+            }
+        });
+
+        // (Botón "Ver más opciones" eliminado por solicitud)
+
+        // Event listener para imprimir ticket
+        document.getElementById('printBtn').addEventListener('click', function(e) { e.preventDefault(); e.stopPropagation(); window.print(); });
+
+        // Event listeners para feedback
+        document.getElementById('feedbackYes').addEventListener('click', function(e) { e.preventDefault(); e.stopPropagation();
+            alert('Gracias por tu retroalimentación. Ayuda a mejorar nuestro sistema.');
+        });
+
+        document.getElementById('feedbackNo').addEventListener('click', function(e) { e.preventDefault(); e.stopPropagation();
+            alert('Lamentamos que la categoría no fuera correcta. Nuestro equipo revisará tu caso.');
+        });
+
+        // Previsualización específica para "Otra causa"
+        function updateOtherCausePreview() {
+            document.getElementById('selectedSymptomText').textContent = 'Otra causa';
+            // Categoría y técnico dedicados
+            document.getElementById('categoryResult').textContent = 'Otra causa';
+            document.getElementById('technicianResult').textContent = 'Técnico en línea (Soporte Remoto)';
+            // Regla y solución genéricas
+            document.getElementById('ruleResult').textContent = '—';
+            document.getElementById('solutionResult').textContent = 'Describa el problema en detalle para asistencia guiada.';
+            // Lista de sugerencias por defecto (2)
+            const sugList = document.getElementById('suggestedSolutionsList');
+            if (sugList) {
+                sugList.innerHTML = '';
+                ['Derivar a soporte remoto para triage.', 'Adjuntar capturas/logs para acelerar el diagnóstico.']
+                    .forEach(s => { const li = document.createElement('li'); li.textContent = s; sugList.appendChild(li); });
+            }
+            // Enfocar el cuadro de texto y resaltar el botón Enviar
+            const desc = document.getElementById('description');
+            if (desc) { desc.focus(); desc.select && desc.select(); }
+            const send = document.getElementById('sendBtn');
+            if (send) send.classList.add('attention');
+        }
+
+        // Event listener para checkbox de otra causa
+        document.getElementById('otherCause').addEventListener('change', function() {
+            if (this.checked) {
+                updateOtherCausePreview();
+            } else {
+                document.getElementById('selectedSymptomText').textContent = selectedSymptom;
+                updateResults(selectedSymptom);
+                const send = document.getElementById('sendBtn');
+                if (send) send.classList.remove('attention');
+            }
+        });
+
+        // Funcionalidad del botón "Go to Top"
+        document.getElementById('goButton').addEventListener('click', function(e) { e.preventDefault(); e.stopPropagation(); window.scrollTo({ top: 0, behavior: 'smooth' }); });
+
+        // Mostrar/ocultar botón "Go to Top" según scroll
+        window.addEventListener('scroll', function() {
+            const goButton = document.getElementById('goButton');
+            if (window.pageYOffset > 300) {
+                goButton.style.opacity = '1';
+                goButton.style.pointerEvents = 'auto';
+            } else {
+                goButton.style.opacity = '0';
+                goButton.style.pointerEvents = 'none';
+            }
+        });
+
+        // Actualizar dinámicamente el total de sugerencias recientes desde /nuevos_sintomas
+        async function refreshSuggestionsCount() {
+            const el = document.getElementById('sugInfo');
+            const setText = (n) => { if (el) el.textContent = `Sugerencias recientes (total: ${n})`; };
+            const tryUrls = getApiBaseUrls().map(b => `${b}/nuevos_sintomas`);
+            for (const url of tryUrls) {
+                try {
+                    const res = await fetch(url, { cache: 'no-store' });
+                    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                    const data = await res.json();
+                    const total = (data && typeof data.total === 'number') ? data.total : 0;
+                    setText(total);
+                    return;
+                } catch (e) {
+                    console.warn('Fallo obteniendo sugerencias desde', url, e);
+                }
+            }
+            // Si todas fallan, mostrar 0 para que no quede con "..."
+            setText(0);
+        }
+
+    document.addEventListener('DOMContentLoaded', refreshSuggestionsCount);
+    // Refresco periódico cada 30s
+    setInterval(refreshSuggestionsCount, 30000);
+    // Refrescar al volver a enfocar la pestaña/ventana
+    window.addEventListener('focus', refreshSuggestionsCount);
+
+    // ---------- Indicador de estado de API (/healthz) ----------
+    function setApiStatus(ok, text, title, level){
+        const el = document.getElementById('apiStatus');
+        if (!el) return;
+        el.classList.remove('status-ok','status-down','status-unknown','status-warn');
+        if (ok === true){
+            if (level === 'warn') el.classList.add('status-warn');
+            else el.classList.add('status-ok');
+            el.textContent = text || 'Conectado';
+        }
+        else if (ok === false){ el.classList.add('status-down'); el.textContent = text || 'Desconectado'; }
+        else { el.classList.add('status-unknown'); el.textContent = text || 'Comprobando…'; }
+        if (title) { el.title = title; }
+    }
+
+    async function pingHealthz(){
+        setApiStatus(null, 'Comprobando…');
+        const bases = getApiBaseUrls();
+        for (const b of bases){
+            try {
+                const start = (window.performance && performance.now) ? performance.now() : Date.now();
+                const r = await fetch(`${b}/healthz`, { cache: 'no-store' });
+                if (r.ok){
+                    const j = await r.json().catch(()=>({}));
+                    if (j && (j.status === 'ok' || j.status === 'OK')){
+                        const end = (window.performance && performance.now) ? performance.now() : Date.now();
+                        const ms = Math.max(0, Math.round(end - start));
+                        let hostOnly = '';
+                        try { hostOnly = new URL(b).hostname; } catch(e){}
+                        const label = hostOnly ? `Conectado (${hostOnly}) • ${ms} ms` : `Conectado • ${ms} ms`;
+                        const level = (ms > 400) ? 'warn' : undefined; // >400ms: advertencia
+                        setApiStatus(true, label, `API: ${b}`, level);
+                        return;
+                    }
+                }
+            } catch(e){ /* continuar con siguiente base */ }
+        }
+        setApiStatus(false, 'Desconectado');
+    }
+
+    document.addEventListener('DOMContentLoaded', () => { pingHealthz(); setInterval(pingHealthz, 10000); });
+    document.getElementById('apiRetry')?.addEventListener('click', function(e){ e.preventDefault(); e.stopPropagation(); pingHealthz(); });
+
+    // ---------- Lógica del asistente de solución (paso a paso) ----------
+    async function fetchIterativeForStep(reset) {
+        if (reset) stepHistorial = [];
+        const payloadFacts = buildFactsPayload();
+        const urls = getApiBaseUrls().map(b => `${b}/clasificar_ticket_iterativo/`);
+        for (const url of urls) {
+            try {
+                const resp = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ facts: payloadFacts, historial: stepHistorial })
+                });
+                if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+                const data = await resp.json();
+                return data;
+            } catch (e) {
+                console.warn('Iterativo (asistente) falló en', url, e);
+            }
+        }
+        return null;
+    }
+
+    function showCurrentStep() {
+        const el = document.getElementById('currentStepText');
+        if (!el) return;
+        const txt = (stepSolutions && stepIndex < stepSolutions.length) ? stepSolutions[stepIndex] : '—';
+        el.textContent = txt;
+    }
+
+    async function startStepSolver() {
+        // Mostrar contenedor
+        const cont = document.getElementById('stepSolver');
+        if (cont) cont.style.display = 'block';
+        // Obtener primera regla/soluciones
+        const data = await fetchIterativeForStep(true);
+        if (!data) {
+            console.warn('Iterativo (asistente) no disponible; ocultando asistente y usando flujo clásico.');
+            const cont = document.getElementById('stepSolver');
+            if (cont) cont.style.display = 'none';
+            classifyWithBackend();
+            return;
+        }
+        stepRuleId = data.regla_id || null;
+        // Soluciones recibidas del backend (recortadas a 3)
+        stepSolutions = Array.isArray(data.soluciones) ? data.soluciones.slice(0, MAX_STEPS) : [];
+        // Fallback local: si por alguna razón llegaron vacías, usar un set mínimo para las 4 reglas objetivo
+        if ((!stepSolutions || stepSolutions.length === 0) && stepRuleId) {
+            const fallbackSteps = {
+                'R-SW-01': [
+                    'Revisar Visor de eventos/logs de la aplicación.',
+                    'Actualizar la aplicación y el sistema operativo.',
+                    'Ejecutar en inicio limpio/modo seguro para descartar conflictos.'
+                ],
+                'R-HW-MON-01': [
+                    'Comprobar que el monitor esté encendido y con brillo adecuado.',
+                    'Verificar cable y puerto (HDMI/DP/VGA) y entrada seleccionada.',
+                    'Probar con otro cable/monitor o equipo.'
+                ],
+                'R-HW-RAM-01': [
+                    'Ejecutar MemTest/Windows Memory Diagnostic.',
+                    'Probar módulos de RAM de a uno y en distintos slots.',
+                    'Limpiar contactos y revisar que estén bien asentados.'
+                ],
+            };
+            if (fallbackSteps[stepRuleId]) {
+                stepSolutions = fallbackSteps[stepRuleId].slice(0, MAX_STEPS);
+            }
+        }
+        stepIndex = 0;
+        // Actualizar cabecera principal con la info de la regla
+        document.getElementById('categoryResult').textContent = data.categoria || '-';
+        document.getElementById('technicianResult').textContent = data.tecnico_responsable || document.getElementById('technicianResult').textContent;
+        document.getElementById('ruleResult').textContent = (data.explicacion && data.explicacion.titulo) ? data.explicacion.titulo : (data.sintoma || '-');
+        document.getElementById('solutionResult').textContent = (stepSolutions && stepSolutions[0]) ? stepSolutions[0] : (data.soluciones && data.soluciones[0]) || '-';
+        showCurrentStep();
+    }
+
+    async function nextStepOrNextRule() {
+        stepIndex += 1;
+        // Si todavía quedan opciones dentro de las 3 máximas, mostrar siguiente
+        if (stepSolutions && stepIndex < stepSolutions.length && stepIndex < MAX_STEPS) {
+            showCurrentStep();
+            return;
+        }
+        // Si ya se consumieron 3 opciones o no hay más soluciones, derivar a técnico
+        const otherCb = document.getElementById('otherCause');
+        if (otherCb) otherCb.checked = true;
+        updateOtherCausePreview();
+        classifyWithBackend();
+        const cont = document.getElementById('stepSolver');
+        if (cont) cont.style.display = 'none';
+        return;
+    }
+
+    // Botones del asistente
+    document.getElementById('stepYesBtn')?.addEventListener('click', function(e) { e.preventDefault(); e.stopPropagation();
+        // Marcamos como resuelto; ocultamos el asistente
+        const cont = document.getElementById('stepSolver');
+        if (cont) cont.style.display = 'none';
+        // Podemos añadir una pequeña confirmación visual
+        const el = document.getElementById('currentStepText');
+        if (el) el.textContent = '¡Listo! Marcado como resuelto.';
+    });
+    document.getElementById('stepNoBtn')?.addEventListener('click', function(e) { e.preventDefault(); e.stopPropagation();
+        nextStepOrNextRule();
+    });
+    </script>
+</body>
+</html>
+```
