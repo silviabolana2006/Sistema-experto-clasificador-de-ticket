@@ -158,9 +158,10 @@ README.md               # Documentación
    ```
 
 ---
+
 Visualizacion:
+
 <img width="723" height="709" alt="image" src="https://github.com/user-attachments/assets/861ef889-76d8-4cd1-a04c-170b12aae630" />
-,
 <img width="725" height="809" alt="image" src="https://github.com/user-attachments/assets/f025b29b-f92e-4dbf-9e26-daeea8ec15b7" />
 
 
@@ -168,6 +169,7 @@ Visualizacion:
 ## Contacto y soporte
 
 Para dudas, sugerencias o reportes de errores, contactarme
+
 
 
 
