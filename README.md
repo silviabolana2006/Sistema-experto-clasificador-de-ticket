@@ -208,14 +208,6 @@ Tu estructura es clara y funcional. Aquí se explica el rol de cada componente p
 
 Para ejecución local, sigue la sección "Cómo ejecutar localmente (API + UI)" más abajo (usa Uvicorn para levantar la API y, opcionalmente, servir la UI). 
 
------
-## 🧹 Changelog de limpieza (acciones recientes)
-
-- Se eliminaron scripts auxiliares y de pruebas manuales usados durante desarrollo: `check_servers.py`, `e2e_local.py`, `e2e_test_post.py`.
-- Se limpió la carpeta de cache de pytest (`.pytest_cache`) y los `__pycache__` temporales.
-- Se añadió la carpeta `removed_by_cleanup/README.txt` que lista los artefactos eliminados y explica la limpieza.
-
-Estos cambios no afectan la lógica del sistema (módulos dentro de `experto_general/`, `main.py` y `interfaz/` mantienen su comportamiento).
 
 ## ▶️ Cómo ejecutar localmente (API + UI)
 
@@ -323,4 +315,5 @@ Notas:
 - El registro automático de nuevos síntomas desde la UI está desactivado; los endpoints relacionados (`/nuevos_sintomas`) permanecen disponibles para uso manual o integraciones futuras.
 
 -----
+
 
