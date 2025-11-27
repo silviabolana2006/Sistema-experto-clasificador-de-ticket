@@ -159,14 +159,16 @@ README.md               # Documentación
 
 ---
 Visualizacion:
-<img width="1098" height="758" alt="image" src="https://github.com/user-attachments/assets/c15798ab-c1ee-4018-bb7d-eb1241b51bbb" />
+<img width="723" height="709" alt="image" src="https://github.com/user-attachments/assets/861ef889-76d8-4cd1-a04c-170b12aae630" />
+,
 <img width="725" height="809" alt="image" src="https://github.com/user-attachments/assets/f025b29b-f92e-4dbf-9e26-daeea8ec15b7" />
 
 
 
 ## Contacto y soporte
 
-Para dudas, sugerencias o reportes de errores, podés abrir un issue en el repositorio o contactar al mantenedor.
+Para dudas, sugerencias o reportes de errores, contactarme
+
 
 
 
